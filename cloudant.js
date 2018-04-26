@@ -20,6 +20,7 @@ var debug = require('debug')('cloudant:cloudant');
 var nanodebug = require('debug')('nano');
 
 const Client = require('./lib/client.js');
+const ChangesReader = require('./lib/changesreader.js');
 
 // Parse an object (i.e. { account: "myaccount", password: "mypassword" }) and
 // return a URL.
@@ -150,6 +151,7 @@ function Cloudant(options, callback) {
     obj.index = index;
     obj.index.del = index_del; // eslint-disable-line camelcase
     obj.find = find;
+    obj.changesReader = new ChangesReader(db, nano.request);
 
     return obj;
   };
