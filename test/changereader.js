@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/* global describe it afterEach */
+/* global describe it before after afterEach */
 'use strict';
 
 const assert = require('assert');
