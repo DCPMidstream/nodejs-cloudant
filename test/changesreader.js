@@ -221,37 +221,73 @@ describe('ChangesReader', function() {
       });
     });
 
-    it('stop after multiple batches', function(done) {
+    it('stop after multiple batches - small batch stop', function(done) {
       var changeURL = `/${DBNAME}/_changes`;
       var since = 'now';
       var batchSize = 45;
       var batch1 = [];
       var batch2 = [];
-      for (var i = 0; i < 20; i++) {
+      for (var i = 0; i < batchSize; i++) {
         batch1.push({seq: null, id: 'a' + i, changes: ['1-1']});
       }
-      batch2.push({seq: null, id: 'b0', changes: ['1-1']});
-      batch2.push({seq: null, id: 'b1', changes: ['1-1']});
+      for (i = 0; i < 5; i++) {
+        batch2.push({seq: null, id: 'b' + i, changes: ['1-1']});
+      }
       nock(SERVER)
         .get(changeURL)
         .query({feed: 'longpoll', timeout: 60000, since: since, limit: batchSize, heartbeat: 5000, seq_interval: batchSize, include_docs: false})
-        .reply(200, { results: batch1, last_seq: '20-0', pending: 2 })
+        .reply(200, { results: batch1, last_seq: '45-0', pending: 2 })
         .get(changeURL)
-        .query({feed: 'longpoll', timeout: 60000, since: '20-0', limit: batchSize, heartbeat: 5000, seq_interval: batchSize, include_docs: false})
-        .reply(200, { results: batch2, last_seq: '22-0', pending: 0 })
-        .get(changeURL)
-        .query({feed: 'longpoll', timeout: 60000, since: '22-0', limit: batchSize, heartbeat: 5000, seq_interval: batchSize, include_docs: false})
-        .reply(200, { results: [], last_seq: '22-0', pending: 0 });
+        .query({feed: 'longpoll', timeout: 60000, since: '45-0', limit: batchSize, heartbeat: 5000, seq_interval: batchSize, include_docs: false})
+        .reply(200, { results: batch2, last_seq: '50-0', pending: 0 });
       var cloudant = Cloudant({ account: ME });
       var db = cloudant.db.use(DBNAME);
       var cr = db.changesReader.get({batchSize: batchSize, since: since});
       var batchCount = 0;
       cr.on('seq', function(seq) {
         if (batchCount === 0) {
-          assert.equal(seq, '20-0');
+          assert.equal(seq, '45-0');
           batchCount++;
         } else {
-          assert.equal(seq, '22-0');
+          assert.equal(seq, '50-0');
+        }
+      }).on('end', function() {
+        done();
+      });
+    });
+
+    it('stop after multiple batches - zero stop', function(done) {
+      var changeURL = `/${DBNAME}/_changes`;
+      var since = 'now';
+      var batchSize = 45;
+      var batch1 = [];
+      var batch2 = [];
+      for (var i = 0; i < batchSize; i++) {
+        batch1.push({seq: null, id: 'a' + i, changes: ['1-1']});
+      }
+      for (i = 0; i < 5; i++) {
+        batch2.push({seq: null, id: 'b' + i, changes: ['1-1']});
+      }
+      nock(SERVER)
+        .get(changeURL)
+        .query({feed: 'longpoll', timeout: 60000, since: since, limit: batchSize, heartbeat: 5000, seq_interval: batchSize, include_docs: false})
+        .reply(200, { results: batch1, last_seq: '45-0', pending: 2 })
+        .get(changeURL)
+        .query({feed: 'longpoll', timeout: 60000, since: '45-0', limit: batchSize, heartbeat: 5000, seq_interval: batchSize, include_docs: false})
+        .reply(200, { results: batch2, last_seq: '90-0', pending: 0 })
+        .get(changeURL)
+        .query({feed: 'longpoll', timeout: 60000, since: '90-0', limit: batchSize, heartbeat: 5000, seq_interval: batchSize, include_docs: false})
+        .reply(200, { results: [], last_seq: '90-0', pending: 0 });
+      var cloudant = Cloudant({ account: ME });
+      var db = cloudant.db.use(DBNAME);
+      var cr = db.changesReader.get({batchSize: batchSize, since: since});
+      var batchCount = 0;
+      cr.on('seq', function(seq) {
+        if (batchCount === 0) {
+          assert.equal(seq, '45-0');
+          batchCount++;
+        } else {
+          assert.equal(seq, '90-0');
         }
       }).on('end', function() {
         done();
