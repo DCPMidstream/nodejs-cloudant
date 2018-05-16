@@ -1,4 +1,7 @@
 # UNRELEASED
+- [IMPROVED] Added support for IAM API key when initializing client with VCAP_SERVICES environment variable.
+
+# 2.2.0 (2018-04-30)
 - [FIXED] Add missing `maxAttempt` parameter to TypeScript definition.
 - [FIXED] Include client initialization callback in TypeScript definition.
 - [FIXED] Prevent client executing done callback multiple times.
