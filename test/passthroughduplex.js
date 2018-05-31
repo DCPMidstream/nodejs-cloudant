@@ -74,6 +74,10 @@ describe('Pass Through Duplex', function() {
 
     duplex.on('pipe', function() {
       done();
+      duplex.end();
+    });
+    duplex.on('finish', function() {
+      process.exit();
     });
 
     process.stdin.pipe(duplex);
